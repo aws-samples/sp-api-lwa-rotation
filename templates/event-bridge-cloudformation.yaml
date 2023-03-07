@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for EventBridge rule 'ssm-parameter-store'
+Resources:
+  EventRule0:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: default
+      EventPattern:
+        source:
+          - aws.ssm
+        detail-type:
+          - Parameter Store Policy Action
+        detail:
+          parameter-name:
+            - /my-erp/*
+      Name: My-ERP-Rotate
+      State: ENABLED
+      Targets:
+        - Id: my-sns-target-to-multi-email-and-sms
+          Arn: >-
+            arn:aws:sns:us-east-2:12DigitAWSID:lwa-credential-rotation

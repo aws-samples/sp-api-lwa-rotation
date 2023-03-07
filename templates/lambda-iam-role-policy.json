@@ -1,0 +1,38 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameters"
+      ],
+      "Resource": [
+        "arn:aws:ssm:us-east-2:12DigitAWSID:parameter/my-erp*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt"
+      ],
+      "Resource": [
+        "arn:aws:kms:us-east-2:12DigitAWSID:key/5adcc01c-762c-4906-92fa-b679b4d68890"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "logs:CreateLogGroup",
+      "Resource": "arn:aws:logs:us-east-2:12DigitAWSID:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": [
+        "arn:aws:logs:us-east-2:12DigitAWSID:log-group:/aws/lambda/my-lwa:*"
+      ]
+    }
+  ]
+}
