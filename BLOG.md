@@ -147,4 +147,4 @@ Resources:
 
 ### Conclusion
 
-With this solution, we can securely store the LWA credentials using AWS KMS and System Manager Parameter Store, separate the code and configuration, and automate the credential rotation process using EventBridge and SNS. By regularly rotating the LWA credentials, we can reduce the risk of credential exposure and compromise. The full code could be found in the GitHub Repo [SP-API-LWA-Rotation](http://gitlab.aws.dev/aonag/schedule-rotate-lwa/).
+With this solution, we can securely store the LWA credentials using AWS KMS and System Manager Parameter Store, separate the code and configuration, and automate the credential rotation process using EventBridge and SNS. By regularly rotating the LWA credentials, we can reduce the risk of credential exposure and compromise. The full code could be found in the GitHub Repo [SP-API-LWA-Rotation](https://github.com/aws-samples/sp-api-lwa-rotation).
