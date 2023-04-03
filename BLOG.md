@@ -1,18 +1,14 @@
-## Rotate your SP-API Credentials Securely and timely
+## Solution Overview
 
-To reduce the risk of exposed and compromised credentials, starting from February 6th, 2023, the SP-API Services require all developers to rotate their “Login With Amazon” (LWA) credentials every 180 days. If the LWA credentials are not updated before the expiration target date, the API integration will lose access to the SP-API. This blog will introduce a secure way to utilize Amazon AWS Systems Manager Parameter Store, KMS, EventBridge, and SNS to rotate SP-API credentials in a timely manner.
-
-![architecture](./static/secure-lwa.png)
-
-### Solution Overview
-
-This solution includes the following components and services to help the developer separate their credentials and their code, as well as providing notification services that send rotation reminders through SMS and email to the AdminOps Team:
+This solution includes the following components and services to help the developer separate their credentials and their code, as well as providing notification services that send rotation reminders through SMS and email to the IT Admin Team:
 
 - AWS Lambda Function along with the access token exchanger code samples, representing the Developer Services calling the SP-API and LWA endpoint.
 - AWS KMS symmetric key for encrypting and decrypting the LWA credentials.
 - AWS System Manager Parameter Store for vaulting the LWA SecureString.
 - AWS EventBridge for capturing scheduling and routing the LWA credential rotation notifications.
-- AWS SNS for sending notifications to the SMS and email destination from the Ops Team as a rotation reminder.
+- AWS SNS for sending notifications to the SMS and email destination from the IT Admin Team as a rotation reminder.
+
+![architecture](./static/secure-lwa.png)
 
 ### 1. Using System Manager Parameter Store to keep your LWA Credential 
 
@@ -41,7 +37,7 @@ Firstly, we will introduce how to use System Manager Parameter Store to store th
 
 ### 2. Create a Lambda using the SecureString to Call SP-API
 
-We will then create a Lambda function that makes an API call to the AWS System Manager services to get the plaintext of the LWA Client ID and Client Secret. To grant the required permissions for KMS and System Manager, we modified the default IAM Policy for the Lambda Role as the Policy below.
+As the next step, we create a Lambda function to make an API call to the AWS System Manager services getting the plain text of the SP-API LWA Client ID and Client Secret. To grant the required permissions for KMS and System Manager, we use the IAM Policy below for the Lambda Role.
 
 ```json
 {
@@ -84,18 +80,30 @@ We will then create a Lambda function that makes an API call to the AWS System M
 }
 ```
 
-The Lambda function represents the Backend service component which will render the true plant text of the LWA credential in the code and make the API call with Login with Amazon services. Using this way, combing the system manager and KMS, we could separate the code and the code config in different place. Then render the real config value in to the code in the runtime of the Lambda function.
+Here we use the Lambda function to represent the backend service component which renders the true plain text of the LWA credential in the code and make the API call with Login with Amazon services and SP-API endpoint. Using this method, combining Systems Manager and KMS, we are able to separate the code and the code config in different places, then render the real config value into the code in the runtime of the Lambda function.
 
 ```python
-response = ssm.get_parameters(
-    Names=['/my-erp/lwa/cliensecret', "/my-erp/lwa/clientidentifier", "/my-erp/refreshToken"], WithDecryption=True
-)
-client_id = response['Parameters'][1]["Value"],
-clien_secret = response['Parameters'][0]["Value"],
-refreshtoken = response['Parameters'][2]["Value"],
+def get_parameters():
+    response = ssm.get_parameters(
+        Names=['/my-erp/lwa/cliensecret', "/my-erp/lwa/clientidentifier", "/my-erp/refreshToken"], WithDecryption=True
+    )
+
+    payload = {'grant_type': 'refresh_token',
+               'client_secret': response['Parameters'][0]["Value"],
+               'client_id': response['Parameters'][1]["Value"],
+               'refresh_token': response['Parameters'][2]["Value"]}
+    lwa = requests.post("https://api.amazon.com/auth/o2/token", data=payload)
+
+    return lwa.text
+
+
+def lambda_handler(event, context):
+    value = get_parameters()
+    print("lwa value =  " + value)
+    return value  # Echo back the first key value
 ```
 
-Run the folllowing command to create a Lambda Funtion .zip  file, and upload the zip file to the AWS Lambda function to deploy it.
+Run the following command in the project folders to create a Lambda Function .zip file, and upload the zip file to the AWS Lambda function to deploy it.
 
 ```bash
  cd lambda-lwa 
@@ -105,7 +113,7 @@ Run the folllowing command to create a Lambda Funtion .zip  file, and upload the
 
 ### 3. Create a SNS Topic with Email SMS Subscription 
 
-To make use of SNS notification service, firstly we need to create a SNS topic which will be used to notify the admin team to rotate the LWA credentials. We could use the following CLI command to create an SNS topic:
+We will use the SNS topic to alert the IT admin team regarding the LWA credential rotation, and use the SNS subscription destinations through Email and SMS to receive these notifications. The below CLI command can create both the SNS topic and its corresponding subscriptions.
 
 ```bash
 aws sns create-topic --name lwa-credential-rotation 
@@ -141,10 +149,22 @@ Resources:
             arn:aws:sns:us-east-2:12DigitAWSID:lwa-credential-rotation
 ```
 
+After creating the above components, for each rotation due, the SSM Parameter store will send a rotation event that EventBridge will route to your SNS email and SMS subscription.  A sample email message looks below.
+
+<img src="./static/email-notifications.png" style="zoom: 60%;" />
+
 ### 5. Rotate the LWA Credential in System Manager in the future
 
+To securely update the credentials, we can log into the seller central with the developer account, navigate to the Developer Console page and generate the new SP-API LWA credentials.
 
+<img src="./static/lwa-credentials.png" style="zoom: 33%;" />
+
+
+
+The existing credentials will expire after the new credentials are generated after 7 days. With central parameter store being used to store the LWA credentials, we can update the Secure String in the SSM service with the newly generated credentials., which will automatically be effective every time the code is triggered.
+
+![](./static/parameter-store-rotate.png)
 
 ### Conclusion
 
-With this solution, we can securely store the LWA credentials using AWS KMS and System Manager Parameter Store, separate the code and configuration, and automate the credential rotation process using EventBridge and SNS. By regularly rotating the LWA credentials, we can reduce the risk of credential exposure and compromise. The full code could be found in the GitHub Repo [SP-API-LWA-Rotation](https://github.com/aws-samples/sp-api-lwa-rotation).
+With this solution, we can securely store the LWA credentials using AWS KMS and System Manager Parameter Store, separate the code and configuration, and automate the credential rotation process using EventBridge and SNS. By regularly rotating the LWA credentials, we can reduce the risk of credential exposure and compromise.
