@@ -3,8 +3,7 @@
 
 ## Background 
 
-Starting from February 6th, 2023. The SP-API Services required all developers need to rotate their "Login With Amazon" (LWA's)s credential for every 180 days. If the LWA credentials is not updated before the expiry target date, the API integration will lose the access to the SP-API.
-To meet this requirement. We propose a way of using AWS System Manager Parameter Store KMS EventBridge and SNS to encrypt the LWA key and a rotation notification services.
+To reduce the risk of exposed and compromised credentials, starting from [February 6th, 2023](https://developer-docs.amazon.com/sp-api/docs/rotating-your-apps-lwa-credentials), the SP-API Services require all developers to rotate their “Login With Amazon” (LWA) credentials every 180 days. If the SP-API LWA credentials are not updated before the expiration target date, the API integration will lose access to the SP-API. All Amazon SP-API Developers are required to follow secure coding standards to follow Personal Identifiable Information (PII) requirements from the [Data Protection Policy](https://sellercentral.amazon.com/mws/static/policy?documentType=DPP&locale=en_US). Credentials include, but are not limited to the encryption key, secret access key, password, and other sensitive credentials are not supposed to be hardcoded in the code. Based on the requirements mentioned above, Amazon is introducing a secure way to utilize Amazon AWS Systems Manager Parameter Store, AWS Key Management Service (KMS), Amazon EventBridge, and Amazon SNS to rotate your SP-API credentials in a timely manner. The overall architecture can be found below:
 
 ![architecture](./static/secure-lwa.png)
 
